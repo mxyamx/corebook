@@ -148,7 +148,7 @@
         let matchCount = 0;
 
         function connect() {
-            const wsUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            const wsUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                 ? 'ws://127.0.0.1:8080'
                 : 'wss://corebook-dn55.onrender.com';
 
@@ -157,7 +157,7 @@
             ws.onopen = () => {
                 statusEl.className = 'px-3 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 tracking-wide';
                 statusEl.innerText = '● ENGINE LIVE';
-                logBox.innerHTML += `<div class="text-emerald-400">[System] Connected to CoreBook Rust backend via WebSocket.</div>`;
+                logBox.innerHTML += `<div class="text-emerald-400">[System] Connected to CoreBook Rust backend via ${wsUrl}.</div>`;
             };
 
             ws.onmessage = (event) => {
