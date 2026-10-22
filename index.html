@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squarepoint | CoreBook LOB Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --sp-slate-blue: #526E88;
+            --sp-light-blue: #A4C2DC;
+            --sp-text-main: #0F172A;
+            --sp-background: #F8FAFC;
+            --sp-border: #E2E8F0;
+        }
+        body { 
+            background-color: #FFFFFF; 
+            color: var(--sp-text-main); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .sq-card { background-color: #F8FAFC; border: 1px solid #E2E8F0; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    
+    <header class="border-b border-gray-200 bg-white sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-4">
+                <div class="relative w-8 h-8 flex items-center justify-center">
+                    <div class="absolute inset-0 border border-slate-700"></div>
+                    <div class="w-3.5 h-3.5 bg-[#7B7B7D]"></div>
+                    <div class="absolute -left-2.5 top-1/2 w-13 h-[1px] bg-slate-700"></div>
+                    <div class="absolute left-1/2 -top-2.5 h-13 w-[1px] bg-slate-700"></div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-lg font-light tracking-[0.25em] text-slate-900 uppercase">COREBOOK</span>
+                </div>
+            </div>
+
+            <!-- WebSocket Status Badge -->
+            <div id="ws-status" class="px-3 py-1 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-200 tracking-wide">
+                ● DISCONNECTED
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-6 pt-10 space-y-8">
+
+        <!-- Title Banner -->
+        <div class="space-y-2 border-b border-gray-100 pb-6">
+            <h1 class="text-3xl font-light text-slate-900 tracking-tight">
+                Quantitative Order Book Engine
+            </h1>
+            <p class="text-sm text-slate-500 max-w-3xl leading-relaxed">
+                Ultra-low-latency continuous double auction matching engine implemented in Rust, ingesting real-time L2 order depth from Coinbase Advanced Trade WebSocket feeds.
+            </p>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Order Book Depth Table (Asks & Bids) -->
+            <div class="sq-card rounded-xl p-6 lg:col-span-2 shadow-sm">
+                <div class="flex justify-between items-center mb-5 border-b border-slate-200 pb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500">Live Market Depth (BTC-USD)</h2>
+                    <span class="text-xs text-slate-400 font-mono">Price-Time Priority</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-8 text-xs">
+                    <!-- Asks (Sells) -->
+                    <div>
+                        <div class="text-red-600 font-semibold mb-3 flex justify-between border-b border-red-100 pb-2">
+                            <span>ASKS (SELLS)</span>
+                            <span>QTY</span>
+                        </div>
+                        <div id="asks-list" class="space-y-1.5 mono">
+                            <div class="text-slate-400 italic py-2">Waiting for engine connection...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bids (Buys) -->
+                    <div>
+                        <div class="text-emerald-600 font-semibold mb-3 flex justify-between border-b border-emerald-100 pb-2">
+                            <span>BIDS (BUYS)</span>
+                            <span>QTY</span>
+                        </div>
+                        <div id="bids-list" class="space-y-1.5 mono">
+                            <div class="text-slate-400 italic py-2">Waiting for engine connection...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Engine Metrics -->
+            <div class="sq-card rounded-xl p-6 space-y-5 shadow-sm">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200 pb-3">Engine Telemetry</h2>
+                
+                <div class="bg-white p-4 rounded-lg border border-slate-200">
+                    <div class="text-xs text-slate-400 font-medium">Last Matching Latency</div>
+                    <div id="metric-latency" class="text-2xl font-light text-slate-800 mt-1 mono">-- ns</div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-lg border border-slate-200">
+                    <div class="text-xs text-slate-400 font-medium">Trades Executed</div>
+                    <div id="metric-matches" class="text-2xl font-light text-emerald-600 mt-1 mono">0</div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-lg border border-slate-200">
+                    <div class="text-xs text-slate-400 font-medium">Consensus Market Price</div>
+                    <div id="metric-price" class="text-2xl font-light text-slate-900 mt-1 mono">$0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Execution Console -->
+        <div class="sq-card rounded-xl p-6 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500">Execution Stream</h2>
+                <span class="text-xs text-slate-400 font-mono">High-Resolution Timing (`std::time::Instant`)</span>
+            </div>
+            
+            <div id="log-box" class="bg-slate-900 text-slate-200 rounded-lg p-4 h-48 overflow-y-auto text-xs space-y-2 mono border border-slate-800">
+                <div class="text-slate-500">[System] Initialized UI Dashboard. Connecting to ws://127.0.0.1:8080...</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer styled after Squarepoint -->
+    <footer class="mt-16 border-t border-gray-200 pt-8 text-center text-xs text-slate-400">
+        &copy; 2026 CoreBook Project &bull; Built for High-Frequency Systems Benchmarking
+    </footer>
+
+    <script>
+        const statusEl = document.getElementById('ws-status');
+        const logBox = document.getElementById('log-box');
+        const metricLatency = document.getElementById('metric-latency');
+        const metricMatches = document.getElementById('metric-matches');
+        const metricPrice = document.getElementById('metric-price');
+        const asksList = document.getElementById('asks-list');
+        const bidsList = document.getElementById('bids-list');
+
+        let matchCount = 0;
+
+        function connect() {
+            const ws = new WebSocket('ws://127.0.0.1:8080');
+
+            ws.onopen = () => {
+                statusEl.className = 'px-3 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 tracking-wide';
+                statusEl.innerText = '● ENGINE LIVE';
+                logBox.innerHTML += `<div class="text-emerald-400">[System] Connected to CoreBook Rust backend via WebSocket.</div>`;
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'match') {
+                    matchCount++;
+                    metricMatches.innerText = matchCount;
+                    metricLatency.innerText = data.latency;
+                    metricPrice.innerText = `$${data.price.toFixed(2)}`;
+
+                    logBox.innerHTML += `<div class="text-sky-300">⚡ [MATCH] Executed @ $${data.price.toFixed(2)} | Qty: ${data.qty} | Latency: ${data.latency}</div>`;
+                    logBox.scrollTop = logBox.scrollHeight;
+                } 
+                else if (data.type === 'book_state') {
+                    asksList.innerHTML = data.asks.map(ask => 
+                        `<div class="flex justify-between text-red-700 bg-red-50/80 px-3 py-1 rounded border border-red-100"><span>$${ask[0].toFixed(2)}</span><span>${ask[1].toFixed(2)}</span></div>`
+                    ).join('');
+
+                    bidsList.innerHTML = data.bids.map(bid => 
+                        `<div class="flex justify-between text-emerald-700 bg-emerald-50/80 px-3 py-1 rounded border border-emerald-100"><span>$${bid[0].toFixed(2)}</span><span>${bid[1].toFixed(2)}</span></div>`
+                    ).join('');
+                }
+            };
+
+            ws.onclose = () => {
+                statusEl.className = 'px-3 py-1 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-200 tracking-wide';
+                statusEl.innerText = '● DISCONNECTED (RETRYING...)';
+                setTimeout(connect, 3000);
+            };
+        }
+
+        connect();
+    </script>
+</body>
+</html>
