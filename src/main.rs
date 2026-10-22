@@ -118,8 +118,15 @@ impl OrderBook {
                     }
 
                     println!("📦 [RESTING BID] Added to book @ ${:.2} | Qty: {:.2}", resting_order.price, resting_order.quantity);
-                    self.bids.push(resting_order);
+                    self.bids.push(resting_order.clone());
                     self.bids.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap());
+
+                    // Broadcast resting order event to UI execution stream
+                    let log_msg = serde_json::json!({
+                        "type": "log",
+                        "text": format!("📦 [RESTING BID] Added to book @ ${:.2} | Qty: {:.2}", resting_order.price, resting_order.quantity)
+                    });
+                    let _ = tx.send(log_msg.to_string());
                 }
             }
             Side::Sell => {
@@ -167,8 +174,15 @@ impl OrderBook {
                     }
 
                     println!("📦 [RESTING ASK] Added to book @ ${:.2} | Qty: {:.2}", resting_order.price, resting_order.quantity);
-                    self.asks.push(resting_order);
-                    self.asks.sort_by(|a, b| a.price.partial_cmp(&a.price).unwrap());
+                    self.asks.push(resting_order.clone());
+                    self.asks.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap());
+
+                    // Broadcast resting order event to UI execution stream
+                    let log_msg = serde_json::json!({
+                        "type": "log",
+                        "text": format!("📦 [RESTING ASK] Added to book @ ${:.2} | Qty: {:.2}", resting_order.price, resting_order.quantity)
+                    });
+                    let _ = tx.send(log_msg.to_string());
                 }
             }
         }
