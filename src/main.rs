@@ -184,7 +184,10 @@ async fn main() {
 
     let tx_server = tx.clone();
     tokio::spawn(async move {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await.unwrap();
+        let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+        let bind_addr = format!("0.0.0.0:{}", port);
+        let listener = tokio::net::TcpListener::bind(&bind_addr).await.unwrap();
+        println!("🚀 UI WebSocket Server started at ws://{}", bind_addr);
         println!("🚀 UI WebSocket Server started at ws://127.0.0.1:8080");
         
         while let Ok((stream, _)) = listener.accept().await {
