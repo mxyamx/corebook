@@ -173,7 +173,6 @@ impl OrderBook {
             }
         }
 
-        // Broadcast updated order book depth to UI
         self.broadcast_state(tx);
     }
 }
@@ -182,13 +181,13 @@ impl OrderBook {
 async fn main() {
     let (tx, _): (broadcast::Sender<String>, broadcast::Receiver<String>) = broadcast::channel(100);
 
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let bind_addr = format!("0.0.0.0:{}", port);
+    
     let tx_server = tx.clone();
     tokio::spawn(async move {
-        let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
-        let bind_addr = format!("0.0.0.0:{}", port);
-        let listener = tokio::net::TcpListener::bind(&bind_addr).await.unwrap();
-        println!("🚀 UI WebSocket Server started at ws://{}", bind_addr);
-        println!("🚀 UI WebSocket Server started at ws://127.0.0.1:8080");
+        let listener = tokio::net::TcpListener::bind(&bind_addr).await.expect("Failed to bind port");
+        println!("🚀 Server listening on {}", bind_addr);
         
         while let Ok((stream, _)) = listener.accept().await {
             let mut rx = tx_server.subscribe();
