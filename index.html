@@ -148,7 +148,11 @@
         let matchCount = 0;
 
         function connect() {
-            const ws = new WebSocket('ws://127.0.0.1:8080');
+            const wsUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'ws://127.0.0.1:8080'
+                : 'wss://corebook-backend.onrender.com';
+
+            const ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 statusEl.className = 'px-3 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 tracking-wide';
