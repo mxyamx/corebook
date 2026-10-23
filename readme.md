@@ -1,4 +1,5 @@
-# CoreBook 🦀
+# CoreBook📊
+
 
 > Ultra-Low-Latency Limit Order Book & Continuous Double Auction Matching Engine built in Rust.
 
